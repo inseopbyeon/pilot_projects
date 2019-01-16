@@ -1,0 +1,38 @@
+import requests
+from pymongo import MongoClient
+
+mongo_uri="mongodb://bis:mlab9816562@ds117540.mlab.com:17540/mydbinstance"
+
+client=MongoClient(mongo_uri)
+
+db=client.mydbinstance
+
+zbsearch_collection=db.zbsearch
+
+query={}
+zbsearch_collection.find_one(query)
+
+response=requests.get('https://apis.zigbang.com/v3/items?detail=true&item_ids=[14398188,14388831,14359880,14470986,14398265,14399002,14454456,14359830,14455741,14398108,14407326,14538654,14271650,14169764,14317786,14360392,14284983,14455772,14507858,14328611,14324683,14455800,14472148,14321635,14397994,14062510,14398156,14164631,14398229,14512053,14454383,14511262,14536531,14269988,14187437,14467241,14448306,14226360,14467013,14317887,14513370,13416109,14165519,14263914,14222733,14254448,14467099,14203858,14328661,14241599,14407024,14138253,14527248,14175178,14147978,14328791,14178200,14348743,14428203,14218025]')
+data = response.json()['items']
+zbsearch_collection.insert_many(data)
+
+query={
+    {
+        {"item.floor":{"$regex":/0-9/}}:
+            {"$gte":3}
+    },
+    {
+        {"item.floor_all":{"$regex":/0-9/}}:
+            {"$gte":4}
+    }  
+}
+zbsearch_collection.find(query)
+
+query={
+    "$or":[
+        {"item.size_m2":{"$gte":33}},
+        {"item.view_count":{"$gte":50}}
+    ]
+}
+
+list(zbsearch_collection.find(query))[1]
