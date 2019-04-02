@@ -1,0 +1,29 @@
+sns.boxplot(x='Risk', y='Credit amount', data=german_dataset)
+
+random_generator = np.random.RandomState(42)
+
+# Permutation means
+pm_ = []
+
+# A 그룹의 크기
+len_a = len(german_dataset[german_dataset['Risk'] == 0])
+# 전체 인덱스 크기
+total_indices = np.arange(len(german_dataset))
+
+for _ in range(1000):
+    # 인덱스를 복사
+    copy_indices = total_indices.copy()
+    # 그룹에 할당할 데이터를 랜덤하게 추출하기 위해서 섞는다.
+    random_generator.shuffle(copy_indices)
+    perm_a = german_dataset.iloc[copy_indices[:len_a]]
+    perm_b = german_dataset.iloc[copy_indices[len_a:]]
+    
+    pm_.append((perm_b['Credit amount'].mean() - perm_a['Credit amount'].mean()))
+
+plt.rcParams["figure.figsize"] = (5,5)
+sns.distplot(pm_, kde=False)
+
+perm_means = np.array(pm_)
+sum(perm_means > 1000) / len(perm_means)
+
+p-value가 '0'이므로 '신용도가 낮은 사람의 부채가 1000만큼 더 높다'귀무가설을 기각한다
