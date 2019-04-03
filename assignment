@@ -27,3 +27,68 @@ perm_means = np.array(pm_)
 sum(perm_means > 1000) / len(perm_means)
 
 p-value가 '0'이므로 '신용도가 낮은 사람의 부채가 1000만큼 더 높다'귀무가설을 기각한다
+
+---------------------------------------------------------------------------------------------------------------------------------------
+pd.options.display.max_columns=None
+
+scores = pd.read_csv('./inputs/scores.csv')
+scores.groupby('Borough')['School ID'].count()
+
+# scores['Total score'] = scores['Average Score (SAT Math)']+scores['Average Score (SAT Reading)']+scores['Average Score (SAT Writing)']
+scores['Total Score'] = scores.loc[:,'Average Score (SAT Math)':'Average Score (SAT Writing)'].sum(axis=1)
+scores.head(3)
+
+# 관찰된 결과에서 얻을 수 있는 웹 페이지 점착성 간의 변동(분산)
+means_ = scores.groupby(['Borough']).agg({'Total Score': np.mean})
+means_
+# means_ = scores.groupby('Borough')['Total Score'].mean();means
+
+var_ = means['Total Score'].var()
+display(var_)
+
+perm_means_ = []
+perm_vars_ = []
+random_generator = np.random.RandomState(42)
+
+# 1. 시간을 한 상자에 모은다.
+scores_values= scores['Total Score'].values
+
+for _ in range(1000):    
+    scores_values_copy = scores_values.copy()
+    random_generator.shuffle(scores_values_copy)
+    
+    # 각 페이지당 5명의 방문자가 있다.
+    Bronx         = scores_values_copy[:118]
+    Brooklyn      = scores_values_copy[118:239]
+    Manhattan     = scores_values_copy[239:345]
+    Queens        = scores_values_copy[345:425]
+    Staten_Island = scores_values_copy[425:]
+
+    # 각 페이지의 평균들을 모은후에 분산을 구하고 저장한다.
+    # 전체집단(20개)에서 sampling을 했다. anova permutaion test를 적용하기 위해서는 자유도가 n-1이다.
+    perm_vars_.append(np.var([Bronx.mean(), Brooklyn.mean(), Manhattan.mean(), Queens.mean(), Staten_Island.mean()], ddof=1))
+
+sns.distplot(perm_vars_, kde=False)
+
+# p value를 구하자.
+print('관찰된 변동: ', var_)
+
+perm_vars_ = np.array(perm_vars_)
+sum(perm_vars_ > var_) / len(perm_vars)
+
+순열 검정의 결과에서 관찰된 결과보다 극단적인 값이 나올 확률, 즉 random variance를 벗어날 확률인 P-value가 0.013 < 0.05(유의수준  𝛼 ) 이므로, 귀무가설을 기각한다 . 따라서 각 지역별 'Total Score'에 차이가 있다고 볼 수 있다.
+
+#### F-통계량을 기반으로 한 전통적 방법의 ANOVA Test(일원분산분석)
+
+Hypothesis
+* 𝐻0 : 각 지역은 동일한 Total Score를 갖는다.  𝜇𝐴=𝜇𝐵=𝜇𝐶=𝜇𝐷 
+* 𝐻1 : 다른 Total Score를 갖는 지역이 1곳 이상 존재한다.
+
+Bronx = scores[scores['Borough'] == 'Bronx']['Total Score'].values
+Brooklyn = scores[scores['Borough'] == 'Brooklyn']['Total Score'].values
+Manhattan = scores[scores['Borough'] == 'Manhattan']['Total Score'].values
+Queens = scores[scores['Borough'] == 'Queens']['Total Score'].values
+Staten_Island = scores[scores['Borough'] == 'Staten Island']['Total Score'].values
+
+from scipy import stats
+stats.f_oneway(Bronx, Brooklyn, Manhattan, Queens, Staten_Island)
