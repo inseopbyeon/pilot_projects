@@ -24,3 +24,4 @@ with open('num_set.csv','r') as f:
                 num2=splited[1],
                 result=result
             ))
+print('hello world!')
